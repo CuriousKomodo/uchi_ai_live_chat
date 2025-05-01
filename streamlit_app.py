@@ -3,6 +3,7 @@ import streamlit as st
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_agents import get_response
 from customer_info_processor import CustomerInfoProcessor, CustomerInfo
+from gif_service import GifService
 import uuid
 
 def initialize_session_state():
@@ -18,6 +19,8 @@ def initialize_session_state():
         st.session_state.wants_to_signup = False
     if "info_processor" not in st.session_state:
         st.session_state.info_processor = CustomerInfoProcessor()
+    if "gif_service" not in st.session_state:
+        st.session_state.gif_service = GifService()
 
 def run_chat():
     # Display property info
@@ -61,6 +64,15 @@ def run_chat():
         # If user wants to sign up, process the conversation and show signup button
         if st.session_state.wants_to_signup:
             try:
+                # Show celebration GIF
+                with st.chat_message("assistant"):
+                    try:
+                        gif_url = st.session_state.gif_service.get_celebration_gif()
+                        st.image(gif_url, width=300)
+                        st.markdown("🎉 Great! Let's get you registered!")
+                    except Exception as e:
+                        print(f"Error displaying GIF: {str(e)}")
+
                 # Convert messages to BaseMessage format
                 base_messages = []
                 for msg in st.session_state.messages:
@@ -73,7 +85,26 @@ def run_chat():
                 customer_info = st.session_state.info_processor.process_conversation(base_messages)
                 signup_url = st.session_state.info_processor.generate_signup_url(customer_info)
 
-                # Display signup button
+                # Display styled signup button
+                st.markdown("""
+                <style>
+                .stButton>button {
+                    width: 100%;
+                    height: 3em;
+                    background-color: black;
+                    color: white;
+                    font-size: 1.2em;
+                    border-radius: 5px;
+                    border: none;
+                    transition: all 0.3s ease;
+                }
+                .stButton>button:hover {
+                    background-color: #333;
+                    transform: scale(1.02);
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
                 st.link_button("Register with us ✨", url=signup_url)
 
             except Exception as e:
