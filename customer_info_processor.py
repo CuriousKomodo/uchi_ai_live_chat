@@ -73,10 +73,10 @@ class CustomerInfoProcessor:
             return CustomerInfo(**customer_info)
         except json.JSONDecodeError:
             raise ValueError("Failed to parse customer information from conversation")
-    
+
     def generate_signup_url(self, customer_info: CustomerInfo) -> str:
         """Generate a signup URL with the customer information as parameters."""
-        base_url = "https://uchi-survey.streamlit.app"
+        base_url = os.getenv("UCHI_SIGNUP_URL")
         params = {
             "motivation": customer_info["motivation"],
             "is_first_time_buyer": str(customer_info["is_first_time_buyer"]).lower(),

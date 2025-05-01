@@ -31,7 +31,7 @@ def run_chat():
 
         try:
             gif_url = st.session_state.gif_service.get_greeting_gif()
-            st.image(gif_url, width=500)
+            st.image(gif_url, width=400)
         except Exception as e:
             print(str(e))
 
@@ -65,7 +65,7 @@ def run_chat():
                 with st.chat_message("assistant"):
                     try:
                         gif_url = st.session_state.gif_service.get_celebration_gif()
-                        st.image(gif_url, width=300)
+                        st.image(gif_url, width=400)
                         st.markdown("🎉 Great! Let's get you registered!")
                     except Exception as e:
                         print(f"Error displaying GIF: {str(e)}")
@@ -79,10 +79,13 @@ def run_chat():
                         base_messages.append(AIMessage(content=msg["content"]))
 
                 # Process the conversation
-                customer_info = st.session_state.info_processor.process_conversation(base_messages)
-                signup_url = st.session_state.info_processor.generate_signup_url(customer_info)
+                signup_url = ""
+                try:
+                    customer_info = st.session_state.info_processor.process_conversation(base_messages)
+                    signup_url = st.session_state.info_processor.generate_signup_url(customer_info)
+                except Exception as e:
+                    print(e)
 
-                # Display styled signup button
                 st.markdown("""
                 <style>
                 .stButton>button {
