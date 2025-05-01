@@ -1,5 +1,8 @@
+from typing import Dict, Tuple
 import streamlit as st
-from langgraph_agents import run_conversation
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_agents import get_response
+from customer_info_processor import CustomerInfoProcessor, CustomerInfo
 import uuid
 
 def initialize_session_state():
@@ -7,87 +10,78 @@ def initialize_session_state():
     if "messages" not in st.session_state:
         st.session_state.messages = []
     if "customer_info" not in st.session_state:
-        st.session_state.customer_info = {
-            "motivation": None,
-            "is_first_time_buyer": None,
-            "is_buying_alone": None,
-            "is_happy_to_sign_up": None
-        }
+        st.session_state.customer_info = {}
     if "conversation_started" not in st.session_state:
         st.session_state.conversation_started = False
 
-def live_chat():
-    initialize_session_state()
-    
-    # Display chat messages from history
+    if "wants_to_signup" not in st.session_state:
+        st.session_state.wants_to_signup = False
+    if "info_processor" not in st.session_state:
+        st.session_state.info_processor = CustomerInfoProcessor()
+
+def run_chat():
+    # Display property info
+    st.title("🤖Chat with Uchi AI")
+
+    # Initialize chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {
+                "role": "assistant",
+                "content": f"Hello! What brought you here today?"
+            }
+        ]
+    if not st.session_state.messages:
+        with st.chat_message("assistant"):
+            st.markdown("Hello! What brought you here today?")
+
+    # Display chat messages
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-    
-    # If conversation hasn't started, show initial message
-    if not st.session_state.conversation_started:
-        initial_message = "I want to buy a property"
-        st.session_state.messages.append({"role": "user", "content": initial_message})
-        with st.chat_message("user"):
-            st.markdown(initial_message)
-        
-        # Run the agent with initial message
-        result = run_conversation(initial_message)
-        st.session_state.messages.append({"role": "assistant", "content": result["messages"][-1].content})
-        st.session_state.customer_info = result["customer_info"]
-        st.session_state.conversation_started = True
-        
-        # Display assistant's response
-        with st.chat_message("assistant"):
-            st.markdown(result["messages"][-1].content)
-    
-    # Accept user input
-    if prompt := st.chat_input("Type your message here..."):
-        # Add user message to chat history
+
+    # Chat input
+    if prompt := st.chat_input("Hi, how can I help you today?"):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        # Display user message
         with st.chat_message("user"):
+            if "@" in str(prompt):
+                st.session_state.wants_to_signup = True
             st.markdown(prompt)
-        
-        # Run the agent with user's message
-        result = run_conversation(prompt)
-        
-        # Update session state with new information
-        st.session_state.customer_info = result["customer_info"]
-        
-        # Display assistant's response
+
         with st.chat_message("assistant"):
-            st.markdown(result["messages"][-1].content)
-            st.session_state.messages.append({"role": "assistant", "content": result["messages"][-1].content})
-        
-        # If all information is collected, show signup link
-        if all(v is not None for v in st.session_state.customer_info.values()):
-            st.markdown("""
-            <div style='text-align: center; margin-top: 20px;'>
-                <a href='https://uchi-survey.streamlit.app' target='_blank' style='background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>
-                    Click here to sign up for Uchi AI!
-                </a>
-            </div>
-            """, unsafe_allow_html=True)
+            new_state = get_response(
+                messages=st.session_state.messages,
+                customer_info=st.session_state.customer_info
+            )
+            response = new_state["response"]
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            st.session_state.wants_to_signup = new_state.get("wants_to_signup", False)
+            st.markdown(response)
+
+        # If user wants to sign up, process the conversation and show signup button
+        if st.session_state.wants_to_signup:
+            try:
+                # Convert messages to BaseMessage format
+                base_messages = []
+                for msg in st.session_state.messages:
+                    if msg["role"] == "user":
+                        base_messages.append(HumanMessage(content=msg["content"]))
+                    else:
+                        base_messages.append(AIMessage(content=msg["content"]))
+
+                # Process the conversation
+                customer_info = st.session_state.info_processor.process_conversation(base_messages)
+                signup_url = st.session_state.info_processor.generate_signup_url(customer_info)
+
+                # Display signup button
+                st.link_button("Register with us ✨", url=signup_url)
+
+            except Exception as e:
+                st.error(f"Error processing customer information: {str(e)}")
 
 def main():
-    st.title("Uchi AI - Your Personal Property Search Assistant")
-    st.markdown("""
-    Welcome to Uchi AI! I'm here to help you find your dream home. 
-    Let's start by getting to know your preferences and requirements.
-    """)
-    
-    live_chat()
-    
-    # Display collected information in a sidebar
-    with st.sidebar:
-        st.header("Collected Information")
-        if st.session_state.customer_info:
-            for key, value in st.session_state.customer_info.items():
-                if value is not None:
-                    st.write(f"{key.replace('_', ' ').title()}: {value}")
+    initialize_session_state()
+    run_chat()
 
 if __name__ == "__main__":
     main()
-
