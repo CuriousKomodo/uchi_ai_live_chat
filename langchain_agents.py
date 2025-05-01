@@ -14,7 +14,6 @@ class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], "The conversation history"]
     customer_info: Annotated[dict, "Customer information extracted from conversation"]
     wants_to_signup: Annotated[bool, "Would the customer like to signup?"]
-    something_went_wrong: Annotated[bool, "Something is not right"]
 
 # Initialize the language model
 llm = ChatOpenAI(model="gpt-4")
@@ -31,7 +30,7 @@ def property_agent(state: AgentState) -> Dict:
     3. Provide helpful information about the Uchi
     4. Detect if the customer wants to sign up
     5. If they wish to sign up, summarise all the key information to the customer and ask for their email
-    6. Detect if something is wrong, e.g. user appears to be confused or asked to speak with a human
+    6. Detect if something is wrong, e.g. user appears to be confused or asked to speak with a human, kindly ask if they like to email team@uchiai.co.uk
     
     Track the following information from the conversation:
     - motivation: str, why they want to buy
@@ -65,7 +64,6 @@ def property_agent(state: AgentState) -> Dict:
     - "response": your conversational response to the user, keep "response" within 150 words, use line breaks or bullet points to make content 
     - "extracted_info": all the information you've extracted so far, including from the latest message
     - "wants_to_signup": boolean, whether the customer showed interest to sign up
-    - "something_went_wrong": boolean, something went wrong
     """
     
     # Convert messages to the format expected by the LLM
@@ -85,7 +83,6 @@ def property_agent(state: AgentState) -> Dict:
             "response": parsed_response["response"],
             "customer_info": parsed_response["extracted_info"],
             "wants_to_signup": parsed_response["wants_to_signup"],
-            "something_went_wrong": parsed_response["something_went_wrong"],
         }
     except json.JSONDecodeError:
         # Fallback if JSON parsing fails
