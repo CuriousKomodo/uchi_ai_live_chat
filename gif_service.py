@@ -27,4 +27,8 @@ class GifService:
     
     def get_celebration_gif(self) -> str:
         """Get a random celebration GIF."""
-        return self.get_random_gif(random.choice(["happy_dancing", "yay"])) 
+        return self.get_random_gif(random.choice(["happy_dancing", "yay"]))
+
+    def get_greeting_gif(self) -> str:
+        """Get a random celebration GIF."""
+        return self.get_random_gif("hello there")

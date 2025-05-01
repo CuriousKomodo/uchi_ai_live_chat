@@ -23,20 +23,17 @@ def initialize_session_state():
         st.session_state.gif_service = GifService()
 
 def run_chat():
-    # Display property info
     st.title("🤖Chat with Uchi AI")
 
-    # Initialize chat history
-    if "messages" not in st.session_state:
-        st.session_state.messages = [
-            {
-                "role": "assistant",
-                "content": f"Hello! What brought you here today?"
-            }
-        ]
     if not st.session_state.messages:
         with st.chat_message("assistant"):
             st.markdown("Hello! What brought you here today?")
+
+        try:
+            gif_url = st.session_state.gif_service.get_greeting_gif()
+            st.image(gif_url, width=500)
+        except Exception as e:
+            print(str(e))
 
     # Display chat messages
     for message in st.session_state.messages:
