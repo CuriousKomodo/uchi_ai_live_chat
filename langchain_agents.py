@@ -14,6 +14,7 @@ class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], "The conversation history"]
     customer_info: Annotated[dict, "Customer information extracted from conversation"]
     wants_to_signup: Annotated[bool, "Would the customer like to signup?"]
+    something_went_wrong: Annotated[bool, "Something is not right"]
 
 # Initialize the language model
 llm = ChatOpenAI(model="gpt-4")
@@ -29,7 +30,8 @@ def property_agent(state: AgentState) -> Dict:
     2. Extract and track key information about the customer's needs
     3. Provide helpful information about the Uchi
     4. Detect if the customer wants to sign up
-    5. If they wish to sign up, summarise all the key information that you collected back to the customer
+    5. If they wish to sign up, summarise all the key information to the customer and ask for their email
+    6. Detect if something is wrong, e.g. user appears to be confused or asked to speak with a human
     
     Track the following information from the conversation:
     - motivation: str, why they want to buy
@@ -37,6 +39,8 @@ def property_agent(state: AgentState) -> Dict:
     - is_first_time_buyer: bool, whether they're first-time buyers
     - is_buying_alone: bool, whether they're buying alone or with someone
     - maximum_budget: int, in thousands (GBP)
+    - num_bedrooms: int, minimum number of bedrooms
+    - timeline: str, when are they expecting to buy the property
     - preferred_location: str
     
     Feel free to add more fields if you get other information from the customer.
@@ -61,6 +65,7 @@ def property_agent(state: AgentState) -> Dict:
     - "response": your conversational response to the user, keep "response" within 150 words, use line breaks or bullet points to make content 
     - "extracted_info": all the information you've extracted so far, including from the latest message
     - "wants_to_signup": boolean, whether the customer showed interest to sign up
+    - "something_went_wrong": boolean, something went wrong
     """
     
     # Convert messages to the format expected by the LLM
@@ -80,6 +85,7 @@ def property_agent(state: AgentState) -> Dict:
             "response": parsed_response["response"],
             "customer_info": parsed_response["extracted_info"],
             "wants_to_signup": parsed_response["wants_to_signup"],
+            "something_went_wrong": parsed_response["something_went_wrong"],
         }
     except json.JSONDecodeError:
         # Fallback if JSON parsing fails

@@ -19,8 +19,9 @@ class CustomerInfo(TypedDict):
     is_first_time_buyer: bool
     is_buying_alone: bool
     preferred_location: str
-    maximum_budget: str
+    maximum_budget: int
     property_type: str
+    number_of_rooms: int
     timeline: str
     additional_notes: Optional[str]
 
@@ -43,7 +44,8 @@ class CustomerInfoProcessor:
             "is_buying_alone": bool,      # Whether they're buying alone or with someone
             "preferred_location": str,     # Their preferred location/area
             "maximum_budget": int,           # Their maximum budget in thousands GBP
-            "property_type": List[str],          # Are they looking for an apartment, a house or both?
+            "property_type": str,          # Are they looking for "apartment", a "house" or "both"?
+            "number_of_rooms": int,          # Minimum number of rooms 
             "timeline": str,             # When are they looking to buy?
             "additional_notes": str        # Any additional relevant information
         }
@@ -71,8 +73,8 @@ class CustomerInfoProcessor:
             # Parse the response as JSON
             customer_info = json.loads(response.content)
             return CustomerInfo(**customer_info)
-        except json.JSONDecodeError:
-            raise ValueError("Failed to parse customer information from conversation")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse customer information from conversation due to {str(e)}")
 
     def generate_signup_url(self, customer_info: CustomerInfo) -> str:
         """Generate a signup URL with the customer information as parameters."""
@@ -84,6 +86,7 @@ class CustomerInfoProcessor:
             "preferred_location": customer_info["preferred_location"],
             "maximum_budget": int(customer_info["maximum_budget"]),
             "property_type": customer_info["property_type"],
+            "num_bedrooms": int(customer_info["number_of_rooms"]),
             "timeline": customer_info["timeline"],
             "additional_notes": customer_info["additional_notes"]
         }

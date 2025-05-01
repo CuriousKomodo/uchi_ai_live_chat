@@ -1,3 +1,4 @@
+import time
 from typing import Dict, Tuple
 import streamlit as st
 from langchain_core.messages import AIMessage, HumanMessage
@@ -21,19 +22,25 @@ def initialize_session_state():
         st.session_state.info_processor = CustomerInfoProcessor()
     if "gif_service" not in st.session_state:
         st.session_state.gif_service = GifService()
+    if "something_went_wrong" not in st.session_state:
+        st.session_state.something_went_wrong = False
 
 def run_chat():
     st.title("🤖Chat with Uchi AI")
 
     if not st.session_state.messages:
         with st.chat_message("assistant"):
-            st.markdown("Hello! What brought you here today?")
-
+            st.markdown("Hello! I am an <b>AI assistant</b> for Uchi. It's my first day at work", unsafe_allow_html=True)
+        time.sleep(1)
         try:
             gif_url = st.session_state.gif_service.get_greeting_gif()
             st.image(gif_url, width=400)
         except Exception as e:
             print(str(e))
+
+        time.sleep(1)
+        with st.chat_message("assistant"):
+            st.markdown("What is your name ? And what brought you here today? 😊")
 
     # Display chat messages
     for message in st.session_state.messages:
@@ -44,7 +51,7 @@ def run_chat():
     if prompt := st.chat_input("Hi, how can I help you today?"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
-            if "@" in str(prompt):
+            if "@" in str(prompt) or "sign up" in str(prompt):
                 st.session_state.wants_to_signup = True
             st.markdown(prompt)
 
@@ -55,8 +62,12 @@ def run_chat():
             )
             response = new_state["response"]
             st.session_state.messages.append({"role": "assistant", "content": response})
-            st.session_state.wants_to_signup = new_state.get("wants_to_signup", False)
+            if not st.session_state.wants_to_signup:
+                st.session_state.wants_to_signup = new_state.get("wants_to_signup", False)
             st.markdown(response)
+
+        if st.session_state.something_went_wrong:
+            st.markdown("Looks like something is wrong. Would you like to email team@uchiai.co.uk for support?")
 
         # If user wants to sign up, process the conversation and show signup button
         if st.session_state.wants_to_signup:
@@ -85,27 +96,7 @@ def run_chat():
                     signup_url = st.session_state.info_processor.generate_signup_url(customer_info)
                 except Exception as e:
                     print(e)
-
-                st.markdown("""
-                <style>
-                .stButton>button {
-                    width: 100%;
-                    height: 3em;
-                    background-color: black;
-                    color: white;
-                    font-size: 1.2em;
-                    border-radius: 5px;
-                    border: none;
-                    transition: all 0.3s ease;
-                }
-                .stButton>button:hover {
-                    background-color: #333;
-                    transform: scale(1.02);
-                }
-                </style>
-                """, unsafe_allow_html=True)
-                
-                st.link_button("Register with us ✨", url=signup_url)
+                st.link_button("Register with us ✨", url=signup_url, color="primary")
 
             except Exception as e:
                 st.error(f"Error processing customer information: {str(e)}")
