@@ -22,8 +22,6 @@ def initialize_session_state():
         st.session_state.info_processor = CustomerInfoProcessor()
     if "gif_service" not in st.session_state:
         st.session_state.gif_service = GifService()
-    if "something_went_wrong" not in st.session_state:
-        st.session_state.something_went_wrong = False
 
 def run_chat():
     st.title("🤖Chat with Uchi AI")
@@ -65,9 +63,6 @@ def run_chat():
             if not st.session_state.wants_to_signup:
                 st.session_state.wants_to_signup = new_state.get("wants_to_signup", False)
             st.markdown(response)
-
-        if st.session_state.something_went_wrong:
-            st.markdown("Looks like something is wrong. Would you like to email team@uchiai.co.uk for support?")
 
         # If user wants to sign up, process the conversation and show signup button
         if st.session_state.wants_to_signup:
